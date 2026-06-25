@@ -4,16 +4,12 @@ import dimaxer_ui as ui
 def p0_times_index_up_down_1():
     """打开 vki_59_demo 模型 → 选中网格 → Color Map 选 Pressure → 展开工具条 → index +1 ×3 → index -1 ×3。"""
 
-    dmx_path = r"/data2/cfd/hzh/qa/Model/vki_59_demo/simulations/vki_59_demo_simulation.dmx"
-
     # 1. 导入新模型
-    ui.item_click("post.top.open_files", 0, 8)
-    ui.item_input_value("post.dialog.open_file_input", dmx_path)
-    ui.wait_alias("post.case_loader.apply")
-    ui.item_click_apply("post.case_loader.apply", 0, 8)
+    ui.import_model_post(r"vki_59_demo/simulations/vki_59_demo_simulation.dmx")
+    ui.wait_ui_idle()
 
     # 2. 选中 vki59 网格
-    ui.item_click("post.ribbon.mesh_select_vki59", 0, 8)
+    ui.item_click("post.ribbon.mesh_select_vki59_1", 0, 8)
     ui.wait_ui_idle()
 
     # 3. Color Map 选 Pressure

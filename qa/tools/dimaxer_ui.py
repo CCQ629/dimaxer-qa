@@ -29,9 +29,16 @@ _IMGUI_TEST_OP_NO_FOCUS_WINDOW = 8
 RENDERVIEW_MOUSE_FLAGS = _IMGUI_TEST_OP_NO_FOCUS_WINDOW | _IMGUI_TEST_OP_NO_CHECK_HOVERED
 _PROGRESS_IDLE_CONFIRM_FRAMES = 3
 
-# After import, wait for this ribbon entry as "scene tree ready" marker.
+# After import, default mesh alias for ribbon_hide_all_and_select_mesh().
 _SCENE_READY_MESH_ALIAS = "post.ribbon.mesh_select_19"
-_SCENE_READY_TIMEOUT_SEC = 60.0
+
+# Post Open files: extension -> loader Apply alias (see MRIOFilesMenuItems.cpp).
+_IMPORT_APPLY_BY_EXT: dict[str, str] = {
+    ".dmh": "post.solution_loader.apply",
+    ".dat": "post.solution_loader.apply",
+    ".dmx": "post.case_loader.apply",
+    ".cgns": "post.cgns_loader.apply",
+}
 
 Ref = Union[str, int]
 
@@ -206,17 +213,20 @@ def select_post_ribbon_tab() -> None:
     _yield_one_frame()
 
 
+def _import_apply_alias_for_model(model_path: str) -> str | None:
+    return _IMPORT_APPLY_BY_EXT.get(Path(model_path).suffix.lower())
+
+
 def import_model_post(
     model_path: str,
     *,
-    wait_enter_post: bool = True,
+    apply_alias: str | None = None,
 ) -> None:
-    """Import model, enter Post, wait for progress and scene-tree ready marker."""
-    te.ImportModelPost(model_path)
-    if wait_enter_post:
-        wait_enter_post_done()
-    wait_ui_idle()
-    wait_alias(_SCENE_READY_MESH_ALIAS, _SCENE_READY_TIMEOUT_SEC)
+    """Import model and click loader Apply (alias chosen from file extension)."""
+    alias = apply_alias if apply_alias is not None else _import_apply_alias_for_model(model_path)
+    te.ImportModelPre(model_path)
+    if alias is not None:
+        item_click(alias)
 
 
 def import_csv_file(csv_path: str) -> None:
@@ -496,6 +506,30 @@ def gather_items(parent_ref: str, depth: int = -1) -> list[dict]:
 def gather_scene_tree_items(depth: int = -1) -> list[dict]:
     """Gather Post scene tree (RibbonScene Meshes); items include ``ref`` when host is rebuilt."""
     return gather_items("//RibbonScene", depth)
+
+
+def item_click_scene_tree_ref_contains(*parts: str) -> None:
+    """Click the first RibbonScene item whose ref/label contains all ``parts``.
+
+    Use when ##SelectBtn / ##VisibilityCheckbox index varies with the scene tree
+    (e.g. Slice1 visibility after importing different models).
+    """
+    if not parts:
+        raise ValueError("item_click_scene_tree_ref_contains requires at least one part")
+    for item in gather_scene_tree_items():
+        ref = str(item.get("ref") or "")
+        label = str(item.get("debug_label") or "")
+        haystack = ref or label
+        if haystack and all(part in haystack for part in parts):
+            if ref:
+                item_click_ref(ref)
+            else:
+                item_click_id(int(item["id"]))
+            return
+    raise RuntimeError(
+        f"Scene tree item not found (must contain {parts!r}); "
+        "use gather_scene_tree_items() or ID Stack snapshot to inspect."
+    )
 
 
 def fetch_snapshot(
