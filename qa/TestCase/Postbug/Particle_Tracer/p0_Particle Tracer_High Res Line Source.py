@@ -10,5 +10,6 @@ def particle_tracer_high_res_line_source():
     ui.combo_click("post.particle_tracer.seeds", "HighResLineSource")
     ui.item_click("post.particle_tracer.show_line")
     ui.item_click("post.ribbon.hide_all")
-    ui.item_click("post.ribbon.vis_vki59")
+    ui.item_click("post.ribbon.vis_particle_tracer1")
+
     ui.capture_renderview(8)
